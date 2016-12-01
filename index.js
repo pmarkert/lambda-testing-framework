@@ -8,7 +8,7 @@ global.TEST_MODE = true;
 module.exports = function(method_under_test, path_to_tests, done) {
 	async.each(fs.readdirSync(path_to_tests), function(filename) {
 		if(filename.endsWith(".json") && !filename.endsWith(".response.json")) {
-			it("case:" + filename, function (testcase_done) {
+			it(filename, function (testcase_done) {
 				const file_content = JSON.parse(fs.readFileSync(path.join(path_to_tests, filename)));
 				const context = mock_context();
 				method_under_test(file_content, context);
