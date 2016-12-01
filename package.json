@@ -1,13 +1,25 @@
 {
-  "name": "alexa-skills-tester",
+  "name": "alexa-skill-tester",
   "version": "1.0.0",
-  "description": "",
+  "description": "Unit testing framework for Amazon Alexa skills",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "author": "Phillip Markert <phillip@ephisys.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pmarkert/alexa-skill-tester.git"
   },
-  "author": "",
-  "license": "ISC",
+  "keywords": [ 
+    "alexa",
+    "unit test",
+    "unit-test",
+    "unit-testing",
+    "unit testing",
+    "lambda",
+    "skill",
+    "alexa skill",
+    "alexa skill testing"
+  ],
+  "license": "MIT",
   "devDependencies": {
     "async": "^2.1.4",
     "aws-lambda-mock-context": "^3.0.1",
