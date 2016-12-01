@@ -7,14 +7,14 @@ global.TEST_MODE = true;
 
 module.exports = function(method_under_test, path_to_tests, done) {
 	async.each(fs.readdirSync(path_to_tests), function(filename) {
-		if(filename.endsWith(".json") && !filename.endsWith(".response.json")) {
+		if(filename.endsWith(".request.json")) {
 			it(filename, function (testcase_done) {
 				const file_content = JSON.parse(fs.readFileSync(path.join(path_to_tests, filename)));
 				const context = mock_context();
 				method_under_test(file_content, context);
 				context.Promise.then(response => {
 					try {
-						const response_filename = path.join(path_to_tests, filename.substring(0,filename.lastIndexOf(".")) + ".response.json");
+						const response_filename = path.join(path_to_tests, filename.replace(/\.request\.json$/,".response.json"));
 						if(!fs.existsSync( response_filename)) {
 							if(process.env.SAVE_RESPONSES) {
 								fs.writeFileSync(response_filename, JSON.stringify(response, null, 2));
