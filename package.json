@@ -20,7 +20,7 @@
     "alexa skill testing"
   ],
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
     "async": "^2.1.4",
     "aws-lambda-mock-context": "^3.0.1",
     "chai": "^3.5.0",
