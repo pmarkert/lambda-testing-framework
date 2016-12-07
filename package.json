@@ -1,6 +1,6 @@
 {
   "name": "alexa-skill-tester",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Unit testing framework for Amazon Alexa skills",
   "main": "index.js",
   "author": "Phillip Markert <phillip@ephisys.com>",
