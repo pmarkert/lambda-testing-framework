@@ -6,6 +6,7 @@ The Alexa Skill Tester is a nice way to perform unit testing for Amazon Alexa sk
 This framework uses a data-driven approach. You create sample *.json files to represent the requests that should be sumitted to the skill.handler under test. The tester loads the request file, invokes the skill handler, and then compares the response to the contents of a matching *.response.json file.
 
 To use the skill-tester follow these steps:
+
 1. Install mocha (a popular unit-testing framework) and alexa-skill-tester as devDependencies.
     `npm install -D mocha alexa-skill-tester`
 2. Create a ./test directory with a bootstrap module in it
