@@ -14,13 +14,13 @@ To use the Lambda Testing Framework follow these steps:
     `npm install -D mocha alexa-skill-tester`
 2. Create a test directory with a bootstrap module in it (test/index.js perhaps)
     ```javascript
-    var ast = require("alexa-skill-tester");
+    var ltf = require("lambda-testing-framework");
     var path = require("path");
     var module_under_test = require("../index");
+describe("Event tests", () => {
+	return ltf(
 
-    describe("Event tests", function(done) {
-        ast(module_under_test.handler, path.resolve(__dirname, "./events"), done);
-    });
+    describe("Event tests", () => ltf(module_under_test.handler, path.resolve(__dirname, "./events"));
     ````
 3. Create a "test/events" directory sub-directory.
 4. Place requests .json files in the ./tests/events folder.

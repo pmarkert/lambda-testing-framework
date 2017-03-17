@@ -1,12 +1,12 @@
 {
-  "name": "alexa-skill-tester",
-  "version": "1.1.2",
-  "description": "Unit testing framework for Amazon Alexa skills",
+  "name": "lambda-testing-framework",
+  "version": "2.0.0",
+  "description": "Unit testing framework for Amazon Lambda functions",
   "main": "index.js",
   "author": "Phillip Markert <phillip@ephisys.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pmarkert/alexa-skill-tester.git"
+    "url": "https://github.com/pmarkert/lambda-testing-framework.git"
   },
   "keywords": [
     "alexa",
@@ -15,14 +15,17 @@
     "unit-testing",
     "unit testing",
     "lambda",
+    "aws lambda",
+    "lambda test",
+    "lambda testing",
     "skill",
     "alexa skill",
     "alexa skill testing"
   ],
   "license": "MIT",
   "dependencies": {
-    "async": "^2.1.4",
     "aws-lambda-mock-context": "^3.0.1",
+    "bluebird": "^3.4.7",
     "chai": "^3.5.0",
     "mocha": "^3.2.0"
   }
