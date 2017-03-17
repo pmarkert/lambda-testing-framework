@@ -5,36 +5,49 @@ const fs = require("fs");
 const chai = require("chai").should();
 global.TEST_MODE = true;
 
-module.exports = function(method_under_test, path_to_tests, expect_failure, post_validate, pre_execute) {
+module.exports = function(method_under_test, path_to_tests, expect_failure, pre_execute, validation_hook) {
 	var filenames = fs.readdirSync(path_to_tests);
 	return Promise.all(filenames.map(filename => {
 		if(filename.endsWith(".request.json")) {
 			return it(path.basename(filename, ".request.json"), () => {
 				const testcase_filename = path.join(path_to_tests, filename);
-				const file_content = JSON.parse(fs.readFileSync(path.join(path_to_tests, filename)));
+				var file_content = JSON.parse(fs.readFileSync(path.join(path_to_tests, filename)));
 				const context = mock_context();
 				var promise;
 				if(pre_execute) {
-					pre_execute(file_content);
+					var updated_content= pre_execute(file_content);
+					if(updated_content!=null) {
+						file_content = updated_content;
+					}
 				}
 				method_under_test(file_content, context, context.done);
 				return context.Promise.then(response => {
 					if(expect_failure) {
 						throw new Error("Test case should have failed, but instead succeeded - " + JSON.stringify(response, null, 2)); 
 					}
-					return matches_expected_response(response, testcase_filename, post_validate);
+					if(validation_hook) {
+						return validation_hook(null, response, request);
+					}
+					else {
+						return matches_expected_response(response, testcase_filename);
+					}
 				}, err => {
 					if(!expect_failure) {
 						throw err;
 					}
-					return matches_expected_response(err.message, testcase_filename, post_validate);
+					if(validation_hook) {
+						return validation_hook(err, null, request);
+					}
+					else {
+						return matches_expected_response(err.message, testcase_filename);
+					}
 				});
 			});
 		}
 	}));
 }
 
-function matches_expected_response(response, testcase_filename, post_validate) {
+function matches_expected_response(response, testcase_filename) {
 	var expected_response;
 	var response_filename = testcase_filename.replace(/\.request\.json$/,".response.pattern");
 	if(!fs.existsSync(response_filename)) {
@@ -52,9 +65,6 @@ function matches_expected_response(response, testcase_filename, post_validate) {
 		else {
 			expected_response = JSON.parse(fs.readFileSync(response_filename));
 			response.should.deep.equals(expected_response);
-			if(post_validate) {
-				return post_validate(testcase_filename);
-			}
 		}
 	}
 	else {
