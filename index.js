@@ -3,7 +3,7 @@ const Promise = require("bluebird");
 const path = require("path");
 const fs = require("fs");
 const chai = require("chai").should();
-global.TEST_MODE = true;
+global.TEST_MODE = process.env.TEST_MODE=="true" || process.env.TEST_MODE==null;
 
 module.exports = function(method_under_test, path_to_tests, expect_failure, pre_execute, validation_hook) {
 	var filenames = fs.readdirSync(path_to_tests);
