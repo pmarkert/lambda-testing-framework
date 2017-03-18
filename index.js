@@ -47,6 +47,8 @@ module.exports = function(method_under_test, path_to_tests, expect_failure, pre_
 	}));
 }
 
+module.exports.injectable = require("./injectable");
+
 function matches_expected_response(response, testcase_filename) {
 	var expected_response;
 	var response_filename = testcase_filename.replace(/\.request\.json$/,".response.pattern");
