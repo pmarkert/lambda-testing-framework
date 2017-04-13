@@ -1,6 +1,6 @@
 {
   "name": "lambda-testing-framework",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Unit testing framework for Amazon Lambda functions",
   "main": "index.js",
   "author": "Phillip Markert <phillip@ephisys.com>",
