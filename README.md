@@ -44,9 +44,13 @@ The lambda-testing-framework will set a global variable `global.TEST_MODE=true` 
 
 ## API
 module.exports = function(method_under_test, path_to_tests, expect_failure, pre_execute_hook, validation_hook) 
+module.exports.matches_expected_response = function(response, request_filepath)
 
 * method_under_test - lambda handler function(event, context, callback). It will be called and passed the json contents of your and a mock lambda context object.
 * path_to_tests - path to the directory in which to look for *.request.json files to be tested
 * expect_failure - boolean flag to indicate that the result should expect an exception to be thrown.
 * pre_execute_hook - function(request) can analyze the request object and perform setup tasks. Can also modify and return the request before it is passed to the handler.
-* validation_hook - function(err, response, request) - Validation hook to be called (instead of the default checks).
+* validation_hook - function(err, response, request, request_filepath) - Validation hook to be called (instead of the default checks).
+
+### Notes
+If the validation_hook is provided, then the default behavior (to check and match the response against a corresponding .response.json or a .response.pattern file) will be bypassed. If you want to maintain the normal check in addition to your own validation, call the matches_expected_response method passing in the response and request_filepath values.

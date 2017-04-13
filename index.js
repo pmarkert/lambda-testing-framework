@@ -4,28 +4,28 @@ const path = require("path");
 const fs = require("fs");
 const chai = require("chai").should();
 
-module.exports = function(method_under_test, path_to_tests, expect_failure, pre_execute, validation_hook) {
+module.exports = function(method_under_test, path_to_tests, expect_failure, pre_execute, validate) {
 	var filenames = fs.readdirSync(path_to_tests);
 	return Promise.all(filenames.map(filename => {
 		if(filename.endsWith(".request.json")) {
 			return it(path.basename(filename, ".request.json"), () => {
 				const testcase_filename = path.join(path_to_tests, filename);
-				var file_content = JSON.parse(fs.readFileSync(path.join(path_to_tests, filename)));
+				var request = JSON.parse(fs.readFileSync(path.join(path_to_tests, filename)));
 				const context = mock_context();
 				var promise;
 				if(pre_execute) {
-					var updated_content= pre_execute(file_content);
+					var updated_content= pre_execute(request);
 					if(updated_content!=null) {
-						file_content = updated_content;
+						request = updated_content;
 					}
 				}
-				method_under_test(file_content, context, context.done);
+				method_under_test(request, context, context.done);
 				return context.Promise.then(response => {
 					if(expect_failure) {
 						throw new Error("Test case should have failed, but instead succeeded - " + JSON.stringify(response, null, 2)); 
 					}
-					if(validation_hook) {
-						return validation_hook(null, response, request);
+					if(validate) {
+						return validate(null, response, request, testcase_filename);
 					}
 					else {
 						return matches_expected_response(response, testcase_filename);
@@ -34,8 +34,8 @@ module.exports = function(method_under_test, path_to_tests, expect_failure, pre_
 					if(!expect_failure) {
 						throw err;
 					}
-					if(validation_hook) {
-						return validation_hook(err, null, request);
+					if(validate) {
+						return validate(err, null, request, testcase_filename);
 					}
 					else {
 						return matches_expected_response(err.message, testcase_filename);
@@ -45,6 +45,8 @@ module.exports = function(method_under_test, path_to_tests, expect_failure, pre_
 		}
 	}));
 }
+
+module.exports.matches_expected_response = matches_expected_response;
 
 function matches_expected_response(response, testcase_filename) {
 	var expected_response;
