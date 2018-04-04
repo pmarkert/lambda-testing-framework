@@ -1,78 +1,118 @@
+const _ = require("lodash");
 const mock_context = require('aws-lambda-mock-context');
 const Promise = require("bluebird");
 const path = require("path");
 const fs = require("fs");
 const chai = require("chai").should();
 
-module.exports = function(method_under_test, path_to_tests, expect_failure, pre_execute, validate) {
-	var filenames = fs.readdirSync(path_to_tests);
-	return Promise.all(filenames.map(filename => {
-		if(filename.endsWith(".request.json")) {
-			return it(path.basename(filename, ".request.json"), () => {
-				const testcase_filename = path.join(path_to_tests, filename);
-				var request = JSON.parse(fs.readFileSync(path.join(path_to_tests, filename)));
-				const context = mock_context();
-				var promise;
-				if(pre_execute) {
-					var updated_content= pre_execute(request);
-					if(updated_content!=null) {
-						request = updated_content;
-					}
-				}
-				method_under_test(request, context, context.done);
-				return context.Promise.then(response => {
-					if(expect_failure) {
-						throw new Error("Test case should have failed, but instead succeeded - " + JSON.stringify(response, null, 2)); 
-					}
-					if(validate) {
-						return validate(null, response, request, testcase_filename);
-					}
-					else {
-						return matches_expected_response(response, testcase_filename);
-					}
-				}, err => {
-					if(!expect_failure) {
-						throw err;
-					}
-					if(validate) {
-						return validate(err, null, request, testcase_filename);
-					}
-					else {
-						return matches_expected_response(err.message, testcase_filename);
-					}
-				});
-			});
-		}
-	}));
+const REQUEST_EXTENSION = ".request.json";
+const RESPONSE_EXTENSION_JSON = ".response.json";
+const RESPONSE_EXTENSION_PATTERN = ".response.pattern";
+
+module.exports = function(method_under_test, options) {
+	if(_.isString(options)) {
+		options = { path: options };
+	}
+	return _.chain(fs.readdirSync(options.path))
+		.filter(isTestCase)
+		.map(extractTestCaseName)
+		.map(_.partial(processTestCase, method_under_test, options))
+		.value();
 }
 
-module.exports.matches_expected_response = matches_expected_response;
+function isTestCase(filename) {
+	return filename.endsWith(REQUEST_EXTENSION);
+}
 
-function matches_expected_response(response, testcase_filename) {
-	var expected_response;
-	var response_filename = testcase_filename.replace(/\.request\.json$/,".response.pattern");
-	if(!fs.existsSync(response_filename)) {
-		response_filename = testcase_filename.replace(/\.request\.json$/,".response.json")
-		if(!fs.existsSync(response_filename)) {
-			if(process.env.SAVE_RESPONSES) {
-				fs.writeFileSync(response_filename, JSON.stringify(response, null, 2));
-				console.log(`Response for ${response_filename} saved.`);
-			} else {
-				console.log(`Response for ${response_filename} does not exist:`);
-				console.log(JSON.stringify(response));
-			}
-			throw new Error(`Response file ${response_filename} does not exist yet.`);
+function extractTestCaseName(filename) {
+	return filename.substr(0, filename.length - REQUEST_EXTENSION.length);
+}
+
+function loadRequest(test_case, options) {
+	return JSON.parse(fs.readFileSync(path.join(options.path, test_case + REQUEST_EXTENSION)));
+}
+
+function processTestCase(method_under_test, options, test_case) {
+	return it(test_case, function() {
+		const request = loadRequest(test_case, options);
+
+		// Pre-processing
+		var promise = Promise.resolve(request);
+		if(options.before) {
+			promise = Promise.resolve(options.before(request, test_case, options))
+				.then(result => request);
 		}
-		else {
-			expected_response = JSON.parse(fs.readFileSync(response_filename));
-			response.should.deep.equals(expected_response);
-		}
+
+		// Execute the test
+		const context = mock_context();
+		return promise.then(request => {
+			method_under_test(request, context, context.done);
+			return context.Promise;
+		}).then(
+			response => processResults(null, response, request, options, test_case)
+		,	error => processResults(error, null, request, options, test_case)
+		);
+	});
+}
+
+function processResults(error, response, request, options, test_case) {
+	if(options.after) {
+		return Promise.resolve(options.after(error, response, request, test_case, options, validateResponse));
+	}
+	return validateResponse(null, response, request, test_case, options);
+}
+
+function validateResponse(error, response, request, test_case, options) {
+	if(error && !options.errorExpected) {
+		throw error;
+	}
+	else if(!error && options.errorExpected) {
+		throw new Error("Test case should have thrown an error, but instead succeeded - " + JSON.stringify(response, null, 2)); 
+	}
+	return matchesExpectedResponse(error, response, test_case, options);
+}
+
+function matchesExpectedResponse(error, response, test_case, options) {
+	var json_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_JSON);
+	var pattern_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_PATTERN);
+	if(fs.existsSync(pattern_response_filename)) {
+		return matches_pattern(error, response, pattern_response_filename, options);
+	}
+	else if(fs.existsSync(json_response_filename) || process.env.SAVE_RESPONSES) {
+		return matches_json(error, response, json_response_filename, options);
 	}
 	else {
-		response = response.stack ? response.toString() : JSON.stringify(response, null, 2);
-		expected_response = fs.readFileSync(response_filename, 'utf-8').trim();
-		if(!response.match(expected_response)) {
-			throw new Error("Response did not match expected pattern - " + response);
+		var printable_response = _.isError(error) ? error.toString() : JSON.stringify(error | response, null, 2);
+		console.error("No response_file exists for test case. Response was " + printable_response);
+		throw new Error(`Test case response file ${json_response_filename} or ${pattern_response_filename} does not exist yet.`);
+	}
+}
+
+function matches_json(error, response, json_response_filename, options) {
+	if(!fs.existsSync(json_response_filename)) {
+		fs.writeFileSync(json_response_filename, JSON.stringify(response, null, 2));
+		console.log(`Response for ${json_response_filename} saved.`);
+	}
+	else {
+		var expected = JSON.parse(fs.readFileSync(json_response_filename));
+		if(!_.isNull(error)) {
+			if(expected.message) {
+				return error.message.should.deep.equals(expected.message);
+			}
+			else {
+				// TODO - Add other json validation properties for errors
+				throw new Error("No validatable properties found in the json response file to validate error");
+			}
+		}
+		else {
+			return response.should.deep.equals(expected);
 		}
 	}
+}
+
+function matches_pattern(error, response, pattern_response_filename, options) {
+debugger;
+	var expected = fs.readFileSync(pattern_response_filename, 'utf-8').trim();
+	var actual = _.isError(error) ? error.toString() : JSON.stringify(error || response, null, 2);
+	return actual.should.match(new RegExp(expected));
 }

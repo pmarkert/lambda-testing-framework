@@ -1,6 +1,6 @@
 {
   "name": "lambda-testing-framework",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "description": "Unit testing framework for Amazon Lambda functions",
   "main": "index.js",
   "author": "Phillip Markert <phillip@ephisys.com>",
@@ -27,6 +27,7 @@
     "aws-lambda-mock-context": "^3.0.1",
     "bluebird": "^3.4.7",
     "chai": "^3.5.0",
+    "lodash": "^4.17.5",
     "mocha": "^3.2.0"
   }
 }
