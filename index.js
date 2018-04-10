@@ -111,7 +111,6 @@ function matches_json(error, response, json_response_filename, options) {
 }
 
 function matches_pattern(error, response, pattern_response_filename, options) {
-debugger;
 	var expected = fs.readFileSync(pattern_response_filename, 'utf-8').trim();
 	var actual = _.isError(error) ? error.toString() : JSON.stringify(error || response, null, 2);
 	return actual.should.match(new RegExp(expected));
