@@ -59,7 +59,7 @@ function processResults(error, response, request, options, test_case) {
 	if(options.after) {
 		return Promise.resolve(options.after(error, response, request, test_case, options, validateResponse));
 	}
-	return validateResponse(null, response, request, test_case, options);
+	return validateResponse(error, response, request, test_case, options);
 }
 
 function validateResponse(error, response, request, test_case, options) {
