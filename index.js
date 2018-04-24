@@ -70,15 +70,15 @@ function validateResponse(error, response, request, test_case, options) {
 	else if(!error && options.errorExpected) {
 		throw new Error("Test case should have thrown an error, but instead succeeded - " + JSON.stringify(response, null, 2)); 
 	}
-	return matchesExpectedResponse(error, response, test_case, options);
+	return matchesExpectedResponse(error, response, request, test_case, options);
 }
 
-function matchesExpectedResponse(error, response, test_case, options) {
+function matchesExpectedResponse(error, response, request, test_case, options) {
 	var js_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_JS);
 	var json_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_JSON);
 	var pattern_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_PATTERN);
 	if(fs.existsSync(js_response_filename)) {
-		return require(js_response_filename)(error, response, test_case, options);
+		return require(js_response_filename)(error, response, request, test_case, options);
 	}
 	if(fs.existsSync(pattern_response_filename)) {
 		return matches_pattern(error, response, pattern_response_filename, options);
