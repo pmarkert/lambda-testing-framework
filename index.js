@@ -8,6 +8,7 @@ const chai = require("chai").should();
 const REQUEST_EXTENSION = ".request.json";
 const RESPONSE_EXTENSION_JSON = ".response.json";
 const RESPONSE_EXTENSION_PATTERN = ".response.pattern";
+const RESPONSE_EXTENSION_JS = ".response.js";
 
 module.exports = function(method_under_test, options) {
 	if(_.isString(options)) {
@@ -73,25 +74,27 @@ function validateResponse(error, response, request, test_case, options) {
 }
 
 function matchesExpectedResponse(error, response, test_case, options) {
+	var js_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_JS);
 	var json_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_JSON);
 	var pattern_response_filename = path.join(options.path, test_case + RESPONSE_EXTENSION_PATTERN);
+	if(fs.existsSync(js_response_filename)) {
+		return require(js_response_filename)(error, response, test_case, options);
+	}
 	if(fs.existsSync(pattern_response_filename)) {
 		return matches_pattern(error, response, pattern_response_filename, options);
 	}
-	else if(fs.existsSync(json_response_filename) || process.env.SAVE_RESPONSES) {
+	else if(fs.existsSync(json_response_filename) || options.saveMissingResponses) {
 		return matches_json(error, response, json_response_filename, options);
 	}
 	else {
-		var printable_response = _.isError(error) ? error.toString() : JSON.stringify(error | response, null, 2);
-		console.error("No response_file exists for test case. Response was " + printable_response);
-		throw new Error(`Test case response file ${json_response_filename} or ${pattern_response_filename} does not exist yet.`);
+		var printable_response = _.isError(error) ? error.toString() : JSON.stringify(error || response, null, 2);
+		throw new Error(`No valid response file found for test case:\n * ${json_response_filename}\n * ${pattern_response_filename}\nResponse was:\n ${printable_response}`);
 	}
 }
 
 function matches_json(error, response, json_response_filename, options) {
 	if(!fs.existsSync(json_response_filename)) {
 		fs.writeFileSync(json_response_filename, JSON.stringify(response, null, 2));
-		console.log(`Response for ${json_response_filename} saved.`);
 	}
 	else {
 		var expected = JSON.parse(fs.readFileSync(json_response_filename));
